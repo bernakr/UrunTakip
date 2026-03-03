@@ -4,9 +4,11 @@ import request from "supertest";
 import {
   closeIntegrationContext,
   createIntegrationContext,
-  IntegrationContext
+  IntegrationContext,
+  registerAndLogin
 } from "./bootstrap";
 import {
+  createProductWithInventory,
   createOrderWithPaymentAttempt,
   findInventoryReserved,
   resetDatabase
@@ -175,5 +177,113 @@ describe("Payment webhook integration", () => {
     expect(attempt?.status).toBe(PaymentAttemptStatus.FAILED);
     expect(order?.status).toBe(OrderStatus.PAYMENT_FAILED);
     expect(reserved).toBe(3);
+  });
+
+  it("supports retry flow from PAYMENT_FAILED to PAID with new payment attempt", async () => {
+    const auth = await registerAndLogin(
+      context.app,
+      `retry-${Date.now()}@example.com`,
+      "Test1234!"
+    );
+    const product = await createProductWithInventory(context.prisma, {
+      onHand: 8,
+      reserved: 0,
+      price: 1500
+    });
+
+    await request(context.app.getHttpServer())
+      .post("/api/cart/items")
+      .set("authorization", `Bearer ${auth.accessToken}`)
+      .send({
+        productId: product.productId,
+        quantity: 2
+      })
+      .expect(201);
+
+    const checkoutResponse = await request(context.app.getHttpServer())
+      .post("/api/orders/checkout")
+      .set("authorization", `Bearer ${auth.accessToken}`)
+      .send({})
+      .expect(201);
+    const checkoutBody = checkoutResponse.body as { id: string };
+
+    const firstAttemptResponse = await request(context.app.getHttpServer())
+      .post("/api/payments/attempts")
+      .set("authorization", `Bearer ${auth.accessToken}`)
+      .send({
+        orderId: checkoutBody.id,
+        idempotencyKey: `idem-first-${randomUUID()}`
+      })
+      .expect(201);
+    const firstAttemptBody = firstAttemptResponse.body as { id: string };
+
+    const failPayload: WebhookPayload = {
+      id: `evt-${randomUUID()}`,
+      type: "payment.failed",
+      occurredAt: new Date().toISOString(),
+      data: {
+        paymentAttemptId: firstAttemptBody.id,
+        orderId: checkoutBody.id
+      }
+    };
+    const failSignature = signWebhookPayload(failPayload);
+    await request(context.app.getHttpServer())
+      .post("/api/webhooks/payments")
+      .set("x-event-id", failPayload.id)
+      .set("x-signature", failSignature)
+      .send(failPayload)
+      .expect(201);
+
+    const orderAfterFail = await context.prisma.order.findUnique({
+      where: { id: checkoutBody.id }
+    });
+    const reservedAfterFail = await findInventoryReserved(
+      context.prisma,
+      product.productId
+    );
+    expect(orderAfterFail?.status).toBe(OrderStatus.PAYMENT_FAILED);
+    expect(reservedAfterFail).toBe(0);
+
+    const retryAttemptResponse = await request(context.app.getHttpServer())
+      .post("/api/payments/attempts")
+      .set("authorization", `Bearer ${auth.accessToken}`)
+      .send({
+        orderId: checkoutBody.id,
+        idempotencyKey: `idem-retry-${randomUUID()}`
+      })
+      .expect(201);
+    const retryAttemptBody = retryAttemptResponse.body as { id: string; status: string };
+    expect(retryAttemptBody.status).toBe(PaymentAttemptStatus.PENDING);
+
+    const successPayload: WebhookPayload = {
+      id: `evt-${randomUUID()}`,
+      type: "payment.succeeded",
+      occurredAt: new Date().toISOString(),
+      data: {
+        paymentAttemptId: retryAttemptBody.id,
+        orderId: checkoutBody.id
+      }
+    };
+    const successSignature = signWebhookPayload(successPayload);
+    await request(context.app.getHttpServer())
+      .post("/api/webhooks/payments")
+      .set("x-event-id", successPayload.id)
+      .set("x-signature", successSignature)
+      .send(successPayload)
+      .expect(201);
+
+    const finalOrder = await context.prisma.order.findUnique({
+      where: { id: checkoutBody.id }
+    });
+    const firstAttempt = await context.prisma.paymentAttempt.findUnique({
+      where: { id: firstAttemptBody.id }
+    });
+    const retryAttempt = await context.prisma.paymentAttempt.findUnique({
+      where: { id: retryAttemptBody.id }
+    });
+
+    expect(finalOrder?.status).toBe(OrderStatus.PAID);
+    expect(firstAttempt?.status).toBe(PaymentAttemptStatus.FAILED);
+    expect(retryAttempt?.status).toBe(PaymentAttemptStatus.SUCCESS);
   });
 });
