@@ -36,7 +36,10 @@ export class PaymentsService {
     if (!order) {
       throw new NotFoundException("Order not found.");
     }
-    if (order.status !== OrderStatus.PENDING_PAYMENT) {
+    if (
+      order.status !== OrderStatus.PENDING_PAYMENT &&
+      order.status !== OrderStatus.PAYMENT_FAILED
+    ) {
       throw new BadRequestException("Order is not in payable state.");
     }
 
@@ -108,4 +111,3 @@ export class PaymentsService {
     };
   }
 }
-

@@ -78,6 +78,7 @@ export class WebhooksService {
         if (payload.type === "payment.succeeded") {
           if (
             order.status !== OrderStatus.PENDING_PAYMENT &&
+            order.status !== OrderStatus.PAYMENT_FAILED &&
             order.status !== OrderStatus.PAID
           ) {
             throw new ConflictException(
@@ -88,7 +89,7 @@ export class WebhooksService {
             where: { id: paymentAttempt.id },
             data: { status: PaymentAttemptStatus.SUCCESS, failureReason: null }
           });
-          if (order.status === OrderStatus.PENDING_PAYMENT) {
+          if (order.status !== OrderStatus.PAID) {
             await tx.order.update({
               where: { id: paymentAttempt.orderId },
               data: { status: OrderStatus.PAID }

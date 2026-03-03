@@ -102,6 +102,51 @@ describe("WebhooksService", () => {
     });
   });
 
+  it("marks order as paid when success event arrives after payment failure", async () => {
+    prismaMock.webhookProcessedEvent.findUnique.mockResolvedValue(null);
+
+    const tx = {
+      webhookProcessedEvent: { create: jest.fn().mockResolvedValue(null) },
+      paymentAttempt: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: "pay-4",
+          orderId: "ord-4"
+        }),
+        update: jest.fn().mockResolvedValue({
+          status: PaymentAttemptStatus.SUCCESS
+        })
+      },
+      order: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: "ord-4",
+          status: OrderStatus.PAYMENT_FAILED
+        }),
+        update: jest.fn().mockResolvedValue({ status: "PAID" })
+      },
+      orderItem: { findMany: jest.fn() },
+      inventory: { findUnique: jest.fn(), update: jest.fn() }
+    };
+
+    prismaMock.$transaction.mockImplementation(
+      async (
+        callback: (client: Prisma.TransactionClient) => Promise<unknown>
+      ) => callback(tx as unknown as Prisma.TransactionClient)
+    );
+
+    const result = await service.processPaymentEvent("evt-4", {
+      id: "evt-4",
+      type: "payment.succeeded",
+      occurredAt: new Date().toISOString(),
+      data: { paymentAttemptId: "pay-4", orderId: "ord-4" }
+    });
+
+    expect(result.status).toBe("processed");
+    expect(tx.order.update).toHaveBeenCalledWith({
+      where: { id: "ord-4" },
+      data: { status: OrderStatus.PAID }
+    });
+  });
+
   it("marks payment failed and releases reserved stock", async () => {
     prismaMock.webhookProcessedEvent.findUnique.mockResolvedValue(null);
 

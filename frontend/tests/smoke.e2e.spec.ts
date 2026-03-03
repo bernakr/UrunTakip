@@ -226,6 +226,110 @@ test("refund smoke -> paid order -> request full refund -> verify api record", a
   expect(refundDetail.status).toBe("REQUESTED");
 });
 
+test("payment failed -> retry payment -> success", async ({ page, request }) => {
+  const email = `smoke-retry-${Date.now()}-${Math.floor(Math.random() * 10000)}@example.com`;
+  const password = "Smoke1234!";
+  const apiBase = process.env.E2E_API_BASE_URL ?? "http://127.0.0.1:3000";
+
+  await page.goto("/register");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel(/^Password$/).fill(password);
+  await page.getByLabel("Confirm Password").fill(password);
+  await page.getByRole("button", { name: "Create account" }).click();
+
+  await expect(page).toHaveURL(/\/products$/);
+  const addToCartButton = page.getByRole("button", { name: "Add to cart" }).first();
+  await expect(addToCartButton).toBeVisible();
+  await addToCartButton.click();
+
+  await page.getByRole("link", { name: "Cart" }).click();
+  await expect(page).toHaveURL(/\/cart$/);
+
+  const checkoutResponsePromise = page.waitForResponse((response) => {
+    return (
+      response.request().method() === "POST" &&
+      response.url().endsWith("/api/orders/checkout")
+    );
+  });
+  const firstAttemptResponsePromise = page.waitForResponse((response) => {
+    return (
+      response.request().method() === "POST" &&
+      response.url().endsWith("/api/payments/attempts")
+    );
+  });
+
+  await page.getByRole("button", { name: "Checkout + Payment" }).click();
+
+  const checkoutResponse = await checkoutResponsePromise;
+  expect(checkoutResponse.ok()).toBeTruthy();
+  const orderBody = (await checkoutResponse.json()) as { id: string };
+
+  const firstAttemptResponse = await firstAttemptResponsePromise;
+  expect(firstAttemptResponse.ok()).toBeTruthy();
+  const firstAttemptBody = (await firstAttemptResponse.json()) as { id: string };
+
+  await expect(page).toHaveURL(/\/orders$/);
+  const orderCard = page
+    .locator(".order-card")
+    .filter({ hasText: `Order ${orderBody.id.slice(0, 8)}` });
+  await expect(orderCard.getByText("Status: PENDING_PAYMENT")).toBeVisible();
+
+  const failedWebhookPayload: WebhookPayload = {
+    id: `evt-${randomUUID()}`,
+    type: "payment.failed",
+    occurredAt: new Date().toISOString(),
+    data: {
+      paymentAttemptId: firstAttemptBody.id,
+      orderId: orderBody.id
+    }
+  };
+  const failedWebhookResponse = await request.post(`${apiBase}/api/webhooks/payments`, {
+    headers: {
+      "content-type": "application/json",
+      "x-event-id": failedWebhookPayload.id,
+      "x-signature": signPayload(failedWebhookPayload)
+    },
+    data: failedWebhookPayload
+  });
+  expect(failedWebhookResponse.ok()).toBeTruthy();
+
+  await page.getByRole("button", { name: "Refresh" }).click();
+  await expect(orderCard.getByText("Status: PAYMENT_FAILED")).toBeVisible();
+
+  const retryAttemptResponsePromise = page.waitForResponse((response) => {
+    return (
+      response.request().method() === "POST" &&
+      response.url().endsWith("/api/payments/attempts")
+    );
+  });
+  await orderCard.getByRole("button", { name: "Retry payment" }).click();
+  const retryAttemptResponse = await retryAttemptResponsePromise;
+  expect(retryAttemptResponse.ok()).toBeTruthy();
+  const retryAttemptBody = (await retryAttemptResponse.json()) as { id: string };
+
+  const successWebhookPayload: WebhookPayload = {
+    id: `evt-${randomUUID()}`,
+    type: "payment.succeeded",
+    occurredAt: new Date().toISOString(),
+    data: {
+      paymentAttemptId: retryAttemptBody.id,
+      orderId: orderBody.id
+    }
+  };
+  const successWebhookResponse = await request.post(`${apiBase}/api/webhooks/payments`, {
+    headers: {
+      "content-type": "application/json",
+      "x-event-id": successWebhookPayload.id,
+      "x-signature": signPayload(successWebhookPayload)
+    },
+    data: successWebhookPayload
+  });
+  expect(successWebhookResponse.ok()).toBeTruthy();
+
+  await page.getByRole("button", { name: "Refresh" }).click();
+  await expect(orderCard.getByText("Status: PAID")).toBeVisible();
+});
+
 test("admin login -> create product -> adjust inventory -> verify ui and api", async ({
   page,
   request

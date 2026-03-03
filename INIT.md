@@ -141,6 +141,7 @@ npm run e2e
 ```
 Kapsam:
 - Musteri yolu: register/login -> urun -> sepet -> checkout -> deterministic webhook -> order status
+- Odeme hata/tekrar yolu: payment.failed -> retry payment -> payment.succeeded
 - Admin yolu: login -> urun olusturma -> stok artirma -> UI + API dogrulama
 
 ## 11) Nerede Kaldik? (Checkpoint)
