@@ -68,8 +68,9 @@ export function AdminPage() {
     if (!token) {
       return;
     }
+    const formElement = event.currentTarget;
 
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     const sku = String(form.get("sku") ?? "");
     const name = String(form.get("name") ?? "");
     const description = String(form.get("description") ?? "");
@@ -81,7 +82,7 @@ export function AdminPage() {
     try {
       await api.createProduct(token, { sku, name, description, price, initialStock });
       show("Product created.", "success");
-      event.currentTarget.reset();
+      formElement.reset();
       await loadProducts();
     } catch (requestError) {
       const requestMessage =

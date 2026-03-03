@@ -139,6 +139,9 @@ Frontend e2e smoke:
 cd frontend
 npm run e2e
 ```
+Kapsam:
+- Musteri yolu: register/login -> urun -> sepet -> checkout -> deterministic webhook -> order status
+- Admin yolu: login -> urun olusturma -> stok artirma -> UI + API dogrulama
 
 ## 11) Nerede Kaldik? (Checkpoint)
 Bu bolum "projede en son nerede oldugumuzu" tek bakista anlamak icin tutulur.
