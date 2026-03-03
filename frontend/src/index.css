@@ -1,0 +1,387 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+:root {
+  --bg-1: #f4efe6;
+  --bg-2: #e2efe2;
+  --surface: #ffffff;
+  --text: #1f2a20;
+  --muted: #617061;
+  --line: #d5dfd4;
+  --brand: #2f6e46;
+  --brand-strong: #204f33;
+  --danger: #b63a3a;
+  --success: #2d8f4d;
+  font-family: "Space Grotesk", sans-serif;
+  line-height: 1.4;
+  font-weight: 500;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 12% 10%, #f8d9ae 0%, transparent 25%),
+    radial-gradient(circle at 88% 18%, #cbf2d3 0%, transparent 21%),
+    linear-gradient(135deg, var(--bg-1), var(--bg-2));
+}
+
+a {
+  color: var(--brand-strong);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+select {
+  font: inherit;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  background: #fff;
+}
+
+button {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  padding: 0.6rem 0.9rem;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(31, 42, 32, 0.12);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+input,
+textarea {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  background: #fff;
+}
+
+.app-shell {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 1.4rem auto 2rem;
+  animation: fade-in 320ms ease;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.brand-kicker {
+  display: inline-block;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.brand h1 {
+  margin: 0.2rem 0 0;
+  font-size: clamp(1.4rem, 2.8vw, 2rem);
+}
+
+.user-chip {
+  display: grid;
+  gap: 0.1rem;
+  text-align: right;
+}
+
+.user-chip strong {
+  color: var(--brand);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.app-nav {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.app-nav a {
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.app-nav a.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+.app-content {
+  margin-top: 1rem;
+}
+
+.page {
+  animation: rise-in 220ms ease;
+}
+
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.page-head h2 {
+  margin: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.85rem;
+}
+
+.grid.two {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0.9rem;
+  box-shadow: 0 10px 28px rgba(45, 60, 48, 0.08);
+}
+
+.product-card h3,
+.order-card h3 {
+  margin: 0.3rem 0;
+}
+
+.badge {
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+.form-card {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.form-card h2,
+.form-card h3 {
+  margin: 0;
+}
+
+.form-card label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.55rem 0.3rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.cart-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.8rem;
+}
+
+.order-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.order-card ul {
+  margin: 0.7rem 0;
+  padding-left: 1rem;
+}
+
+.detail-card {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.detail-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.inline-field {
+  display: grid;
+  gap: 0.35rem;
+  width: min(240px, 100%);
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.auth-page .form-card {
+  width: min(450px, 100%);
+}
+
+.hint {
+  margin: 0;
+  color: var(--muted);
+}
+
+.error {
+  margin: 0;
+  color: var(--danger);
+}
+
+.success {
+  margin: 0 0 0.75rem;
+  color: var(--success);
+}
+
+.toast-stack {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  display: grid;
+  gap: 0.5rem;
+  width: min(360px, calc(100vw - 2rem));
+  z-index: 30;
+}
+
+.toast {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.65rem 0.75rem;
+  background: #fff;
+  box-shadow: 0 12px 20px rgba(22, 34, 27, 0.16);
+  animation: rise-in 180ms ease;
+}
+
+.toast button {
+  padding: 0.2rem 0.5rem;
+}
+
+.toast.success {
+  border-color: #8fd1a1;
+}
+
+.toast.error {
+  border-color: #e6a8a8;
+}
+
+.toast.info {
+  border-color: #aac6e9;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    width: calc(100% - 1rem);
+  }
+
+  .app-header {
+    flex-direction: column;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .cart-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+}
