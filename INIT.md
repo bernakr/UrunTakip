@@ -134,6 +134,12 @@ Frontend kapsami:
 - Refund request
 - Admin product create + inventory adjust
 
+Frontend e2e smoke:
+```bash
+cd frontend
+npm run e2e
+```
+
 ## 11) Nerede Kaldik? (Checkpoint)
 Bu bolum "projede en son nerede oldugumuzu" tek bakista anlamak icin tutulur.
 
@@ -154,7 +160,7 @@ Bu bolum "projede en son nerede oldugumuzu" tek bakista anlamak icin tutulur.
   - checkout + stok rezervasyonunun rollback senaryolari
   - payment webhook idempotency senaryolari
   - refund akisinin order state gecisleri
-- 2. Ardindan frontend icin e2e smoke test ekle (kritik user journey):
+- 2. Ardindan frontend icin e2e smoke test ekle (kritik user journey): (Tamamlandi)
   - register/login
   - urun -> sepet -> checkout -> payment sonucu
   - order listesinde durumun gorunmesi

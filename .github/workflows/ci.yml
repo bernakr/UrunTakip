@@ -64,3 +64,107 @@ jobs:
 
       - name: Integration tests
         run: npm run test:integration
+
+  frontend-smoke:
+    runs-on: ubuntu-latest
+    needs: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ecommerce_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ecommerce_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      NODE_ENV: test
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ecommerce_e2e?schema=public
+      DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/ecommerce_e2e?schema=public
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      JWT_SECRET: test-secret
+      JWT_EXPIRES_IN: 1d
+      WEBHOOK_SIGNATURE_SECRET: test-webhook-secret
+      API_BASE_URL: http://127.0.0.1:3000
+      FRONTEND_ORIGIN: http://127.0.0.1:5173
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: Prepare database
+        run: |
+          npm run prisma:generate
+          npm run prisma:deploy
+          npm run prisma:seed
+
+      - name: Start backend API
+        run: npm run start:dev > /tmp/backend.log 2>&1 &
+
+      - name: Wait for backend API
+        run: |
+          for i in {1..60}; do
+            curl -fsS http://127.0.0.1:3000/api/health && exit 0
+            sleep 2
+          done
+          echo "Backend failed to start" >&2
+          cat /tmp/backend.log >&2 || true
+          exit 1
+
+      - name: Start frontend dev server
+        run: cd frontend && VITE_API_BASE_URL=http://127.0.0.1:3000 npm run dev -- --host 127.0.0.1 --port 5173 > /tmp/frontend.log 2>&1 &
+
+      - name: Wait for frontend
+        run: |
+          for i in {1..60}; do
+            curl -fsS http://127.0.0.1:5173 && exit 0
+            sleep 2
+          done
+          echo "Frontend failed to start" >&2
+          cat /tmp/frontend.log >&2 || true
+          exit 1
+
+      - name: Install Playwright browser
+        run: cd frontend && npx playwright install --with-deps chromium
+
+      - name: Run frontend smoke e2e
+        run: cd frontend && E2E_FRONTEND_URL=http://127.0.0.1:5173 E2E_API_BASE_URL=http://127.0.0.1:3000 WEBHOOK_SIGNATURE_SECRET=test-webhook-secret npm run e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          if-no-files-found: ignore
