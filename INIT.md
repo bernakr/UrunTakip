@@ -38,6 +38,7 @@ NODE_ENV=development
 PORT=3000
 
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ecommerce?schema=public
+DATABASE_URL_TEST=postgresql://postgres:postgres@localhost:5432/ecommerce_test?schema=public
 
 REDIS_HOST=localhost
 REDIS_PORT=6379
@@ -80,6 +81,7 @@ npm run start:worker:dev
 npm run typecheck
 npm run lint
 npm test
+npm run test:integration
 ```
 
 Concurrency stress testi:
@@ -148,7 +150,7 @@ Bu bolum "projede en son nerede oldugumuzu" tek bakista anlamak icin tutulur.
   - Container icinde seed icin: `npm run prisma:seed:prod`
 
 ## 12) Sonraki Teknik Adim (Net)
-- 1. Backend entegrasyon testlerini genislet:
+- 1. Backend entegrasyon testlerini genislet: (Tamamlandi)
   - checkout + stok rezervasyonunun rollback senaryolari
   - payment webhook idempotency senaryolari
   - refund akisinin order state gecisleri
