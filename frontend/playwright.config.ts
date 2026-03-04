@@ -7,6 +7,7 @@ export default defineConfig({
     timeout: 15_000
   },
   fullyParallel: false,
+  workers: process.env.CI ? 1 : undefined,
   retries: process.env.CI ? 1 : 0,
   use: {
     baseURL: process.env.E2E_FRONTEND_URL ?? "http://127.0.0.1:5173",

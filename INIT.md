@@ -143,6 +143,9 @@ Kapsam:
 - Musteri yolu: register/login -> urun -> sepet -> checkout -> deterministic webhook -> order status
 - Odeme hata/tekrar yolu: payment.failed -> retry payment -> payment.succeeded
 - Admin yolu: login -> urun olusturma -> stok artirma -> UI + API dogrulama
+CI notu:
+- Frontend smoke job'inda backend `npm run build && npm run start` ile,
+  frontend ise `npm run build && npm run preview` ile calistirilir (watch/dev yerine daha stabil).
 
 ## 11) Nerede Kaldik? (Checkpoint)
 Bu bolum "projede en son nerede oldugumuzu" tek bakista anlamak icin tutulur.
