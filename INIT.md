@@ -146,6 +146,10 @@ Kapsam:
 CI notu:
 - Frontend smoke job'inda backend `npm run build && npm run start` ile,
   frontend ise `npm run build && npm run preview` ile calistirilir (watch/dev yerine daha stabil).
+- CI hiz notu:
+  - backend ve frontend-smoke job'lari paralel calisir.
+  - Ayni branch'te yeni push gelirse eski CI kosusu iptal edilir.
+  - Playwright browser indirimi cache ile tekrarli kosularda hizlanir.
 
 ## 11) Nerede Kaldik? (Checkpoint)
 Bu bolum "projede en son nerede oldugumuzu" tek bakista anlamak icin tutulur.
