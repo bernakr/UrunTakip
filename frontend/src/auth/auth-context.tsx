@@ -3,7 +3,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode
 } from "react";
@@ -11,6 +13,7 @@ import { api } from "../lib/api";
 import type { AuthUser } from "../types/api";
 
 const ACCESS_TOKEN_KEY = "ecommerce_access_token";
+const REFRESH_TOKEN_KEY = "ecommerce_refresh_token";
 const USER_KEY = "ecommerce_user";
 
 interface AuthContextValue {
@@ -40,40 +43,91 @@ function getInitialToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
+function getInitialRefreshToken(): string | null {
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => getInitialUser());
   const [token, setToken] = useState<string | null>(() => getInitialToken());
+  const [refreshToken, setRefreshToken] = useState<string | null>(() => getInitialRefreshToken());
+  const initialRefreshTriedRef = useRef(false);
 
-  const persist = useCallback((nextToken: string, nextUser: AuthUser): void => {
-    setToken(nextToken);
-    setUser(nextUser);
-    localStorage.setItem(ACCESS_TOKEN_KEY, nextToken);
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+  const persist = useCallback(
+    (nextToken: string, nextRefreshToken: string, nextUser: AuthUser): void => {
+      setToken(nextToken);
+      setRefreshToken(nextRefreshToken);
+      setUser(nextUser);
+      localStorage.setItem(ACCESS_TOKEN_KEY, nextToken);
+      localStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
+      localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+    },
+    []
+  );
+
+  const clearSession = useCallback((): void => {
+    setToken(null);
+    setRefreshToken(null);
+    setUser(null);
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
   }, []);
+
+  useEffect(() => {
+    if (initialRefreshTriedRef.current) {
+      return;
+    }
+    initialRefreshTriedRef.current = true;
+
+    if (!refreshToken) {
+      return;
+    }
+
+    let active = true;
+
+    void api
+      .refresh(refreshToken)
+      .then((response) => {
+        if (!active) {
+          return;
+        }
+        persist(response.accessToken, response.refreshToken, response.user);
+      })
+      .catch(() => {
+        if (!active) {
+          return;
+        }
+        clearSession();
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [refreshToken, persist, clearSession]);
 
   const signIn = useCallback(
     async (email: string, password: string): Promise<void> => {
       const response = await api.login(email, password);
-      persist(response.accessToken, response.user);
+      persist(response.accessToken, response.refreshToken, response.user);
     },
     [persist]
   );
 
   const signUp = useCallback(
     async (email: string, password: string): Promise<void> => {
-      await api.register(email, password);
-      const response = await api.login(email, password);
-      persist(response.accessToken, response.user);
+      const response = await api.register(email, password);
+      persist(response.accessToken, response.refreshToken, response.user);
     },
     [persist]
   );
 
   const signOut = useCallback((): void => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-  }, []);
+    if (refreshToken) {
+      void api.logout(refreshToken).catch(() => undefined);
+    }
+    clearSession();
+  }, [clearSession, refreshToken]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

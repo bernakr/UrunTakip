@@ -20,6 +20,16 @@ Bu dosya, projeyi ilk kez ayaga kaldirmak icin minimum baslangic adimlarini tani
   - Uc uca akis test edildi: login -> urun -> sepet -> checkout -> payment attempt -> order status guncelleme
 - Sonraki odak: backend icin ek entegrasyon testlerini yazip CI seviyesinde zorunlu hale getirmek.
 
+## 0.2) Guncel Durum Notu (2026-03-06)
+- Tamamlanan:
+  - Auth genisletme: `refresh`, `forgot-password`, `reset-password`, `logout`
+  - Katalog query: `q`, `sort`, `page`, `limit` destekli urun listeleme
+  - Siparis lifecycle: `POST /orders/:id/cancel`, `GET /orders/:id/timeline`
+  - Frontend: forgot/reset ekranlari, urun arama-siralama-sayfalama, siparis cancel + timeline UI
+- Eklenen test kapsami:
+  - Backend integration: auth session/reset/logout, orders lifecycle(cancel/timeline), products query
+  - Frontend smoke: forgot/reset flow, catalog search + cancel/timeline akisi
+
 ## 1) Gereksinimler
 - Node.js 20.19+ (Vite 7 icin)
 - Docker ve Docker Compose
@@ -46,6 +56,8 @@ REDIS_PASSWORD=
 
 JWT_SECRET=dev-secret
 JWT_EXPIRES_IN=1d
+REFRESH_TOKEN_EXPIRES_IN=30d
+PASSWORD_RESET_TOKEN_EXPIRES_IN=30m
 
 WEBHOOK_SIGNATURE_SECRET=local-webhook-secret
 API_BASE_URL=http://localhost:3000
@@ -128,9 +140,11 @@ Varsayilan adres:
 
 Frontend kapsami:
 - Login/Register
+- Forgot password + reset password
 - Product list + product detail
+- Product search + sorting + pagination
 - Cart + checkout + payment attempt
-- Orders + auto polling (pending payment durumunda)
+- Orders + auto polling (pending payment durumunda) + cancel + timeline
 - Refund request
 - Admin product create + inventory adjust
 

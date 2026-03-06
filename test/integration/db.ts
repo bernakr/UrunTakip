@@ -34,6 +34,8 @@ interface CreateOrderWithAttemptOptions {
 export async function resetDatabase(prisma: PrismaLike): Promise<void> {
   await prisma.$executeRawUnsafe(`
     TRUNCATE TABLE
+      "PasswordResetToken",
+      "RefreshToken",
       "WebhookProcessedEvent",
       "RefundRequest",
       "PaymentAttempt",

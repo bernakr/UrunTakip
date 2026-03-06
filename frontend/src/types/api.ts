@@ -8,7 +8,13 @@ export interface AuthUser {
 
 export interface AuthResponse {
   accessToken: string;
+  refreshToken: string;
   user: AuthUser;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+  resetToken?: string;
 }
 
 export interface Product {
@@ -21,6 +27,14 @@ export interface Product {
   createdAt: string;
   updatedAt: string;
   availableStock: number;
+}
+
+export interface ProductListResponse {
+  items: Product[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 export interface CartItem {
@@ -53,7 +67,24 @@ export interface Order {
   status: "PENDING_PAYMENT" | "PAID" | "PAYMENT_FAILED" | "CANCELLED" | "REFUNDED";
   totalAmount: number;
   createdAt: string;
+  updatedAt: string;
   items: OrderItem[];
+}
+
+export interface OrderTimelineEvent {
+  type:
+    | "ORDER_CREATED"
+    | "PAYMENT_ATTEMPT_CREATED"
+    | "PAYMENT_SUCCEEDED"
+    | "PAYMENT_FAILED"
+    | "ORDER_CANCELLED"
+    | "REFUND_REQUESTED"
+    | "REFUND_PROCESSING"
+    | "REFUND_SUCCEEDED"
+    | "REFUND_FAILED";
+  status: string;
+  occurredAt: string;
+  detail: string | null;
 }
 
 export interface PaymentAttempt {
@@ -93,4 +124,3 @@ export interface ApiErrorBody {
   method: string;
   path: string;
 }
-

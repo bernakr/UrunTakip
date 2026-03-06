@@ -1,11 +1,24 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Roles } from "../common/decorators/roles.decorator";
 import { Role } from "../common/enums/role.enum";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { CreateProductDto } from "./dto/create-product.dto";
-import { ProductListItem, ProductsService } from "./products.service";
+import { ListProductsQueryDto } from "./dto/list-products-query.dto";
+import {
+  ProductListItem,
+  ProductListResponse,
+  ProductsService
+} from "./products.service";
 
 @Controller("products")
 @ApiTags("Products")
@@ -21,8 +34,8 @@ export class ProductsController {
   }
 
   @Get()
-  list(): Promise<ProductListItem[]> {
-    return this.productsService.list();
+  list(@Query() query: ListProductsQueryDto): Promise<ProductListResponse> {
+    return this.productsService.list(query);
   }
 
   @Get(":id")

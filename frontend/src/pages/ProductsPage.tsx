@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/auth-context";
 import { useToast } from "../components/toast";
-import { api } from "../lib/api";
+import { api, type ProductSort } from "../lib/api";
 import type { Product } from "../types/api";
 
 function formatPrice(amount: number): string {
@@ -19,6 +19,11 @@ export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<ProductSort>("newest");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const activeProducts = useMemo(
     () => products.filter((product) => product.isActive),
@@ -29,8 +34,15 @@ export function ProductsPage() {
     setLoading(true);
     setError(null);
     try {
-      const list = await api.getProducts();
-      setProducts(list);
+      const response = await api.getProducts({
+        q: query,
+        sort,
+        page,
+        limit: 9
+      });
+      setProducts(response.items);
+      setTotal(response.total);
+      setTotalPages(response.totalPages);
     } catch (requestError) {
       const requestMessage =
         requestError instanceof Error ? requestError.message : "Failed to load products.";
@@ -38,7 +50,7 @@ export function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, query, sort]);
 
   useEffect(() => {
     void loadProducts();
@@ -67,7 +79,43 @@ export function ProductsPage() {
           {loading ? "Refreshing..." : "Refresh"}
         </button>
       </div>
+
+      <div className="card form-card">
+        <label>
+          Search
+          <input
+            value={query}
+            onChange={(event) => {
+              setPage(1);
+              setQuery(event.target.value);
+            }}
+            placeholder="SKU, name or description"
+          />
+        </label>
+        <label>
+          Sort
+          <select
+            value={sort}
+            onChange={(event) => {
+              setPage(1);
+              setSort(event.target.value as ProductSort);
+            }}
+          >
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="price_asc">Price low to high</option>
+            <option value="price_desc">Price high to low</option>
+            <option value="name_asc">Name A-Z</option>
+            <option value="name_desc">Name Z-A</option>
+          </select>
+        </label>
+      </div>
+
       {error ? <p className="error">{error}</p> : null}
+      <p className="hint">
+        {total} products found. Page {page} / {totalPages}
+      </p>
+
       <div className="grid">
         {activeProducts.map((product) => (
           <article className="card product-card" key={product.id}>
@@ -92,6 +140,23 @@ export function ProductsPage() {
             </div>
           </article>
         ))}
+      </div>
+
+      <div className="row-actions" style={{ marginTop: "0.8rem" }}>
+        <button
+          type="button"
+          onClick={() => setPage((previous) => Math.max(1, previous - 1))}
+          disabled={loading || page <= 1}
+        >
+          Previous
+        </button>
+        <button
+          type="button"
+          onClick={() => setPage((previous) => Math.min(totalPages, previous + 1))}
+          disabled={loading || page >= totalPages}
+        >
+          Next
+        </button>
       </div>
     </section>
   );

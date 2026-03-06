@@ -76,6 +76,16 @@ export class WebhooksService {
         }
 
         if (payload.type === "payment.succeeded") {
+          if (order.status === OrderStatus.CANCELLED) {
+            await tx.paymentAttempt.update({
+              where: { id: paymentAttempt.id },
+              data: {
+                status: PaymentAttemptStatus.FAILED,
+                failureReason: "Order was cancelled before payment confirmation."
+              }
+            });
+            return;
+          }
           if (
             order.status !== OrderStatus.PENDING_PAYMENT &&
             order.status !== OrderStatus.PAYMENT_FAILED &&
@@ -100,7 +110,8 @@ export class WebhooksService {
 
         if (
           order.status !== OrderStatus.PENDING_PAYMENT &&
-          order.status !== OrderStatus.PAYMENT_FAILED
+          order.status !== OrderStatus.PAYMENT_FAILED &&
+          order.status !== OrderStatus.CANCELLED
         ) {
           throw new ConflictException(
             `Invalid order transition for fail event. current=${order.status}`

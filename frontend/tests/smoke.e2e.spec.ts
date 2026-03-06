@@ -16,6 +16,10 @@ interface ProductApi {
   sku: string;
 }
 
+interface ProductListApi {
+  items: ProductApi[];
+}
+
 interface InventoryApi {
   onHand: number;
   reserved: number;
@@ -386,8 +390,8 @@ test("admin login -> create product -> adjust inventory -> verify ui and api", a
 
   const productsResponse = await request.get(`${apiBase}/api/products`);
   expect(productsResponse.ok()).toBeTruthy();
-  const products = (await productsResponse.json()) as ProductApi[];
-  const createdProduct = products.find((product) => product.sku === sku);
+  const products = (await productsResponse.json()) as ProductListApi;
+  const createdProduct = products.items.find((product) => product.sku === sku);
   expect(createdProduct?.id).toBe(productId);
 
   const loginResponse = await request.post(`${apiBase}/api/auth/login`, {
@@ -443,4 +447,85 @@ test("admin login -> create product -> adjust inventory -> verify ui and api", a
   expect(inventoryAfter.onHand).toBe(initialStock + delta);
   expect(inventoryAfter.reserved).toBe(0);
   expect(inventoryAfter.available).toBe(initialStock + delta);
+});
+
+test("forgot password -> reset password -> login with new password", async ({ page }) => {
+  const email = `smoke-reset-${Date.now()}-${Math.floor(Math.random() * 10000)}@example.com`;
+  const oldPassword = "Smoke1234!";
+  const newPassword = "Smoke5678!";
+
+  await page.goto("/register");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel(/^Password$/).fill(oldPassword);
+  await page.getByLabel("Confirm Password").fill(oldPassword);
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page).toHaveURL(/\/products$/);
+
+  await page.getByRole("button", { name: "Logout" }).click();
+  await page.goto("/forgot-password");
+  await page.getByLabel("Email").fill(email);
+  await page.getByRole("button", { name: "Send reset token" }).click();
+
+  const tokenLine = page.getByText("Development reset token:");
+  await expect(tokenLine).toBeVisible();
+  const tokenText = await tokenLine.textContent();
+  const token = tokenText?.split(":").slice(1).join(":").trim();
+  expect(token).toBeTruthy();
+
+  await page.goto("/reset-password");
+  await page.getByLabel("Reset Token").fill(token as string);
+  await page.getByLabel("New Password").fill(newPassword);
+  await page.getByLabel("Confirm Password").fill(newPassword);
+  await page.getByRole("button", { name: "Reset password" }).click();
+
+  await expect(page).toHaveURL(/\/products$/);
+});
+
+test("catalog search + order cancel + timeline", async ({ page }) => {
+  const email = `smoke-cancel-${Date.now()}-${Math.floor(Math.random() * 10000)}@example.com`;
+  const password = "Smoke1234!";
+
+  await page.goto("/register");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel(/^Password$/).fill(password);
+  await page.getByLabel("Confirm Password").fill(password);
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page).toHaveURL(/\/products$/);
+
+  await page.getByLabel("Search").fill("Hoodie");
+  await expect(page.getByText("Zip Hoodie")).toBeVisible();
+  await page.getByLabel("Sort").selectOption("price_desc");
+
+  const addToCartButton = page.getByRole("button", { name: "Add to cart" }).first();
+  await addToCartButton.click();
+
+  await page.getByRole("link", { name: "Cart" }).click();
+  await expect(page).toHaveURL(/\/cart$/);
+
+  const checkoutResponsePromise = page.waitForResponse((response) => {
+    return (
+      response.request().method() === "POST" &&
+      response.url().endsWith("/api/orders/checkout")
+    );
+  });
+
+  await page.getByRole("button", { name: "Checkout + Payment" }).click();
+  const checkoutResponse = await checkoutResponsePromise;
+  expect(checkoutResponse.ok()).toBeTruthy();
+  const orderBody = (await checkoutResponse.json()) as { id: string };
+
+  await expect(page).toHaveURL(/\/orders$/);
+  const orderCard = page
+    .locator(".order-card")
+    .filter({ hasText: `Order ${orderBody.id.slice(0, 8)}` });
+  await expect(orderCard.getByText("Status: PENDING_PAYMENT")).toBeVisible();
+
+  await orderCard.getByRole("button", { name: "Cancel order" }).click();
+  await expect(orderCard.getByText("Status: CANCELLED")).toBeVisible();
+
+  const hideTimelineButton = orderCard.getByRole("button", { name: "Hide timeline" });
+  if ((await hideTimelineButton.count()) === 0) {
+    await orderCard.getByRole("button", { name: "Show timeline" }).click();
+  }
+  await expect(orderCard.getByText("ORDER_CANCELLED")).toBeVisible();
 });

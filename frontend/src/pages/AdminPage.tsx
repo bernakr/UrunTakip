@@ -26,10 +26,10 @@ export function AdminPage() {
 
   const loadProducts = useCallback(async (): Promise<void> => {
     try {
-      const value = await api.getProducts();
-      setProducts(value);
-      if (value.length > 0 && !selectedProductId) {
-        setSelectedProductId(value[0].id);
+      const response = await api.getProducts({ page: 1, limit: 100 });
+      setProducts(response.items);
+      if (response.items.length > 0 && !selectedProductId) {
+        setSelectedProductId(response.items[0].id);
       }
     } catch (requestError) {
       const requestMessage =

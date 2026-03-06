@@ -55,8 +55,10 @@ export function LoginPage() {
         <p className="hint">
           New account? <Link to="/register">Register</Link>
         </p>
+        <p className="hint">
+          Forgot password? <Link to="/forgot-password">Reset it</Link>
+        </p>
       </form>
     </div>
   );
 }
-

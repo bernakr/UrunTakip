@@ -33,6 +33,30 @@ Not:
 - `POST /api/auth/register` her zaman `CUSTOMER` rolunde hesap acar.
 - Admin hesaplari seed veya manuel DB islemleriyle uretilir.
 
+## 1.1) Refresh Token
+Amaç: Access token yenileme ve oturum rotasyonu.
+
+```bash
+curl -X POST http://localhost:3000/api/auth/refresh \
+  -H "content-type: application/json" \
+  -d '{"refreshToken":"REFRESH_TOKEN"}'
+```
+
+## 1.2) Forgot / Reset Password
+Amaç: sifre unutma ve sifre yenileme akisini dogrulamak.
+
+```bash
+curl -X POST http://localhost:3000/api/auth/forgot-password \
+  -H "content-type: application/json" \
+  -d '{"email":"customer@example.com"}'
+```
+
+```bash
+curl -X POST http://localhost:3000/api/auth/reset-password \
+  -H "content-type: application/json" \
+  -d '{"token":"RESET_TOKEN","newPassword":"NewCustomer1234!"}'
+```
+
 ## 2) Urun Olustur (Admin)
 Amaç: Catalog + Inventory temel verisi olusturmak.
 
@@ -41,6 +65,12 @@ curl -X POST http://localhost:3000/api/products \
   -H "content-type: application/json" \
   -H "authorization: Bearer ADMIN_TOKEN" \
   -d '{"sku":"SKU-NEW-001","name":"New Product","price":15900,"initialStock":25}'
+```
+
+Urun listelemede arama/siralama/sayfalama:
+
+```bash
+curl "http://localhost:3000/api/products?q=hoodie&sort=price_desc&page=1&limit=10"
 ```
 
 ## 3) Musteri Login
@@ -104,6 +134,19 @@ curl -X POST http://localhost:3000/api/refunds \
   -H "content-type: application/json" \
   -H "authorization: Bearer CUSTOMER_TOKEN" \
   -d '{"orderId":"ORDER_ID","amount":1000,"idempotencyKey":"refund-001-ORDER_ID"}'
+```
+
+## 8.1) Siparis Iptal + Timeline
+Amaç: Odenmemis siparisi iptal etmek ve event timeline'i gormek.
+
+```bash
+curl -X POST http://localhost:3000/api/orders/ORDER_ID/cancel \
+  -H "authorization: Bearer CUSTOMER_TOKEN"
+```
+
+```bash
+curl -X GET http://localhost:3000/api/orders/ORDER_ID/timeline \
+  -H "authorization: Bearer CUSTOMER_TOKEN"
 ```
 
 ## 9) Health + Docs
